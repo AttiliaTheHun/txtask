@@ -1,3 +1,6 @@
+##### Fork changes
+Extracted some hardcoded values into constants to make it easier to configure.
+
 # txtask
 
 `txtask` is a CLI application that allows you to chat with your local text files using [Ollama](https://github.com/jmorganca/ollama).

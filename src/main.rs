@@ -81,6 +81,9 @@ pub struct Message {
 }
 
 const OLLAMA_API_BASE: &str = "http://localhost:11434/api";
+const MODEL: &str = "llama";
+const TARGET_FOLDER: &str = "/home/johnw/llama-workspace";
+const DATABASE_FILE: &str = "/home/johnw/llama-workspace/database.json";
 
 struct OllamaClient {
     client: reqwest::Client,
@@ -98,7 +101,7 @@ impl OllamaClient {
             .client
             .post(format!("{OLLAMA_API_BASE}/embeddings"))
             .json(&serde_json::json!({
-                "model": "mistral",
+                "model": MODEL,
                 "prompt": input.to_lowercase()
             }))
             .send()
@@ -126,7 +129,7 @@ impl OllamaClient {
             .client
             .post(format!("{OLLAMA_API_BASE}/chat"))
             .json(&serde_json::json!({
-                "model": "mistral",
+                "model": MODEL,
                 "stream": true,
                 "messages": messages
             }))
@@ -182,7 +185,7 @@ impl<'a> Database<'a> {
 
     fn save(&self) {
         let data = json!({ "data": self.data });
-        let mut file = File::create("database.json").unwrap();
+        let mut file = File::create(DATABASE_FILE).unwrap();
         file.write_all(data.to_string().as_bytes()).unwrap();
     }
 
@@ -192,7 +195,7 @@ impl<'a> Database<'a> {
             data: HashMap<String, EmbeddedDocument>,
         }
 
-        let content = fs::read_to_string("database.json").unwrap();
+        let content = fs::read_to_string(DATABASE_FILE).unwrap();
         let parsed: DBFile = serde_json::from_str(&content).unwrap();
         let mut filtered = HashMap::new();
         for key in parsed.data.keys() {
@@ -242,14 +245,14 @@ async fn main() -> Result<(), ErrorMessage> {
     let api_client = OllamaClient::new();
     let mut database = Database::new(&api_client);
 
-    if fs::metadata("database.json").is_ok() {
+    if fs::metadata(DATABASE_FILE).is_ok() {
         database.load();
     } else {
         println!("Initialing database...");
         let tokenizer = Tokenizer::from_pretrained("bert-base-cased", None).unwrap();
         let splitter = TextSplitter::new(tokenizer).with_trim_chunks(true);
-
-        for entry in fs::read_dir("./data")? {
+		
+        for entry in fs::read_dir(TARGET_FOLDER)? {
             let entry = entry?;
             let file_path = entry.path();
             let is_markdown = file_path.to_str().unwrap().ends_with("md");
